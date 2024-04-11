@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "433340399012",
+    "project_id": "rhsocialapp",
+    "storage_bucket": "rhsocialapp.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:433340399012:android:8172bb866e3f2041005531",
+        "android_client_info": {
+          "package_name": "com.rhsocialapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCMQ9_hML3StIvdp10GCJ8K_HLmwaq62XM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

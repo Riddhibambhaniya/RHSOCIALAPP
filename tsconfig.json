@@ -1,3 +1,10 @@
 {
-  "extends": "@react-native/typescript-config/tsconfig.json"
+  "extends": "@react-native/typescript-config/tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": "./", // Set the baseUrl to the root directory of your project
+    "paths": {
+      "react-native-safe-area-context": ["node_modules/react-native-safe-area-context"],
+      "firebase/app": ["node_modules/@firebase/app"]
+    }
+  }
 }
