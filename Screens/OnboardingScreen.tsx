@@ -82,6 +82,12 @@ const styles = StyleSheet.create({
     flex: 1,
     
   },
+  image: {
+    flex: 1, // Ensure the image takes up the entire space
+    width: '100%', // Set width to 100%
+    height: undefined, // Let height be calculated automatically
+    resizeMode: 'cover', // Cover the entire space
+  },
 });
 
 export default OnboardingScreen;

@@ -4,36 +4,45 @@ import FormInput from '../Components/FormInput';
 import FormButton from '../Components/FormButton';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../Navigation/YourStackfile';
-import { firebase } from '@react-native-firebase/auth'; // Corrected import
-
+import { firebase } from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore'; // Import Firestore
 
 interface SignupScreenProps {
   navigation: StackNavigationProp<RootStackParamList, 'Signup'>;
 }
 
 const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
+  const [name, setName] = useState<string>('');
   const [email, setEmail] = useState<string>('');
+  const [phoneNumber, setPhoneNumber] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
 
   const handleSignUp = async () => {
     try {
-      if (!email || !password || !confirmPassword) {
+      if (!name || !email || !phoneNumber || !password || !confirmPassword) {
         Alert.alert('Error', 'All fields are required');
         return;
       }
-  
+
       if (password !== confirmPassword) {
         Alert.alert('Error', 'Passwords do not match');
         return;
       }
-  
-      // Create user with email and password
+
       await firebase.auth().createUserWithEmailAndPassword(email, password);
       const user = firebase.auth().currentUser;
+
       if (user) {
-        // Send email verification
         await user.sendEmailVerification();
+
+        // Save user data to Firestore
+        await firestore().collection('users').doc(user.uid).set({
+          name: name,
+          email: email,
+          phoneNumber: phoneNumber,
+        });
+
         navigation.navigate('BottomTabScreen');
       } else {
         Alert.alert('Error', 'User not found after signup.');
@@ -41,13 +50,18 @@ const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
     } catch (error: any) {
       Alert.alert('Error', error.message);
     }
-    
   };
-  
 
   return (
     <View style={styles.container}>
       <Text style={styles.text}>Create an account</Text>
+
+      <FormInput
+        labelValue={name}
+        onChangeText={(userName) => setName(userName)}
+        placeholderText="Name"
+        iconType="user"
+      />
 
       <FormInput
         labelValue={email}
@@ -57,6 +71,14 @@ const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
         keyboardType="email-address"
         autoCapitalize="none"
         autoCorrect={false}
+      />
+
+      <FormInput
+        labelValue={phoneNumber}
+        onChangeText={(userPhoneNumber) => setPhoneNumber(userPhoneNumber)}
+        placeholderText="Phone Number"
+        iconType="phone"
+        keyboardType="phone-pad"
       />
 
       <FormInput
