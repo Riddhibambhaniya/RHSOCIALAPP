@@ -25,7 +25,7 @@ const BottomTabScreen = () => {
       <Tab.Screen
         name="Profile"
         component={ProfileScreen as React.ComponentType<any>} // Add explicit type annotation
-        options={{ headerShown: false }}
+        options={{ headerShown: false }} initialParams={{ userId: 'currentUserId' }}
       />
     </Tab.Navigator>
   );

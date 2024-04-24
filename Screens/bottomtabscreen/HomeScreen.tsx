@@ -18,6 +18,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [newPostImage, setNewPostImage] = useState<string | null>(null);
   const [showNewPost, setShowNewPost] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
+  const [profilePicture, setProfilePicture] = useState<string | null>(null); // Moved the state declaration here
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -26,7 +27,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         if (currentUser) {
           setUser(currentUser);
           await fetchPosts(); // No need to pass any arguments
-
+          setProfilePicture(currentUser?.photoURL || null); // Set the profile picture
         }
       } catch (error) {
         console.error('Error fetching user:', error);
@@ -36,8 +37,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   
     fetchUser();
   }, []);
-  
-
  // Removed the userId parameter from fetchPosts as it's no longer needed
 const fetchPosts = async () => {
   try {
@@ -96,10 +95,11 @@ const fetchPosts = async () => {
       if (currentUser) {
         // Create new post document in Firestore
         await firestore().collection('posts').add({
-          userId: currentUser.uid, // Use currentUser.uid as userId
-          userName: currentUser.displayName, // Use currentUser.displayName if needed
+          userId: currentUser.uid,
+          userName: currentUser.displayName,
           text: newPostText,
           image: imageUrl,
+          profilePic: currentUser.photoURL || null, // Use the profile picture from current user
           createdAt: firestore.FieldValue.serverTimestamp(),
         });
   
@@ -121,10 +121,13 @@ const fetchPosts = async () => {
     }
   };
   
+  const handleProfilePress = (userId: string) => {
+    navigation.navigate('Profile', { userId });
+  };
+  
+  
 
-  const handleProfilePress = (userId: string, profilePicture: string | null) => {
-    navigation.navigate('Profile', { userId, profilePicture: profilePicture || null });
-};
+
 
 
 
@@ -168,9 +171,10 @@ const fetchPosts = async () => {
             <TouchableOpacity key={post.id} style={styles.card} > 
               <View style={styles.userInfo}>
               {post.profilePic && (
-  <TouchableOpacity onPress={() => handleProfilePress(post.userId, post.profilePic)}>
-    <Image source={{ uri: post.profilePic }} style={styles.profilePic} />
-  </TouchableOpacity>
+  <TouchableOpacity onPress={() => handleProfilePress(post.userId)}>
+  <Image source={{ uri: post.profilePic }} style={styles.profilePic} />
+</TouchableOpacity>
+
 )}
                 {post.userName !== null ? (
                   <Text style={styles.userName}>{post.userName}</Text>

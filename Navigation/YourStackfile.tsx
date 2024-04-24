@@ -46,6 +46,7 @@ const YourStackfile: React.FC = () => {
       <Stack.Screen name="Chat" component={ChatScreen} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
+
       <Stack.Screen name="Home" component={HomeScreen} />
     </Stack.Navigator>
   );
