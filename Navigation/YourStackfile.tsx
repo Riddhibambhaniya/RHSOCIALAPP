@@ -1,3 +1,5 @@
+// YourStackfile.tsx
+
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import OnboardingScreen from '../Screens/OnboardingScreen';
@@ -5,11 +7,13 @@ import LoginScreen from '../Screens/LoginScreen';
 import SignupScreen from '../Screens/SignUp';
 import ForgotPasswordScreen from '../Screens/ForgotpasswordScreen';
 import ResetPasswordScreen from '../Screens/Resetpassword';
-import MessagesScreen from '../Screens/bottomtabscreen/MessagePage'; // Corrected import
+import MessagesScreen from '../Screens/bottomtabscreen/MessagePage';
 import ChatScreen from '../Screens/ChatScreen';
 import BottomTabScreen from '../Screens/bottomtabscreen/BottomTabScreen';
-import { firebase } from '@react-native-firebase/auth';
 import EditProfileScreen from '../Screens/EditProfileScreen';
+import { firebase } from '@react-native-firebase/auth';
+import ProfileScreen from '../Screens/bottomtabscreen/ProfileScreen';
+import HomeScreen from '../Screens/bottomtabscreen/HomeScreen';
 
 export type RootStackParamList = {
   Onboarding: undefined;
@@ -17,11 +21,12 @@ export type RootStackParamList = {
   Signup: undefined;
   ForgotPassword: undefined;
   BottomTabScreen: undefined;
-  Profile: undefined;
+  Profile: { userId: string; profilePicture?: string | null };
   ResetPassword: undefined;
   Messages: undefined;
   Chat: { user: any };
-  EditProfile: undefined; // Add EditProfile to the RootStackParamList
+  EditProfile: undefined;
+  Home: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -40,7 +45,8 @@ const YourStackfile: React.FC = () => {
       <Stack.Screen name="Messages" component={MessagesScreen} />
       <Stack.Screen name="Chat" component={ChatScreen} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
-
+      <Stack.Screen name="Profile" component={ProfileScreen} />
+      <Stack.Screen name="Home" component={HomeScreen} />
     </Stack.Navigator>
   );
 };

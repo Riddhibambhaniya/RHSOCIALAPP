@@ -5,7 +5,7 @@ import FormButton from '../Components/FormButton';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../Navigation/YourStackfile';
 import { firebase } from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore'; // Import Firestore
+import firestore from '@react-native-firebase/firestore';
 
 interface SignupScreenProps {
   navigation: StackNavigationProp<RootStackParamList, 'Signup'>;
@@ -20,29 +20,20 @@ const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
 
   const handleSignUp = async () => {
     try {
-      if (!name || !email || !phoneNumber || !password || !confirmPassword) {
-        Alert.alert('Error', 'All fields are required');
-        return;
-      }
-
-      if (password !== confirmPassword) {
-        Alert.alert('Error', 'Passwords do not match');
-        return;
-      }
-
-      await firebase.auth().createUserWithEmailAndPassword(email, password);
-      const user = firebase.auth().currentUser;
-
+      // Create user using email and password
+      const { user } = await firebase.auth().createUserWithEmailAndPassword(email, password);
+  
+      // Check if user exists
       if (user) {
-        await user.sendEmailVerification();
-
-        // Save user data to Firestore
+        // Save user data to Firestore with user ID
         await firestore().collection('users').doc(user.uid).set({
+          userId: user.uid, // Save user ID
           name: name,
           email: email,
           phoneNumber: phoneNumber,
         });
-
+  
+        // Navigate to the bottom tab screen
         navigation.navigate('BottomTabScreen');
       } else {
         Alert.alert('Error', 'User not found after signup.');
@@ -51,6 +42,7 @@ const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
       Alert.alert('Error', error.message);
     }
   };
+  
 
   return (
     <View style={styles.container}>

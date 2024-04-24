@@ -1,14 +1,16 @@
+// BottomTabScreen.tsx
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Image } from 'react-native';
 import { RouteProp, ParamListBase } from '@react-navigation/native';
 import HomeScreen from './HomeScreen';
-import ProfileScreen from './ProfileScreen';
+
 import MessagesScreen from './MessagePage';
+import ProfileScreen from '../bottomtabscreen/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
 
-const TAB_ICON_SIZE = 33; // Define the size of the tab icons
+const TAB_ICON_SIZE = 33;
 
 const BottomTabScreen = () => {
   return (
@@ -20,7 +22,11 @@ const BottomTabScreen = () => {
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
       <Tab.Screen name="Messages" component={MessagesScreen} options={{ headerShown: false }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ headerShown: false }} />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen as React.ComponentType<any>} // Add explicit type annotation
+        options={{ headerShown: false }}
+      />
     </Tab.Navigator>
   );
 };
@@ -34,7 +40,6 @@ const getTabBarIcon = (route: RouteProp<ParamListBase, string>, focused: boolean
   } else if (route.name === 'Profile') {
     imageName = require('../../Assets/Images/profile.jpg');
   }
-  // Set the width and height of the tab icon based on the TAB_ICON_SIZE constant
   return <Image source={imageName} style={{ width: TAB_ICON_SIZE, height: TAB_ICON_SIZE }} />;
 };
 

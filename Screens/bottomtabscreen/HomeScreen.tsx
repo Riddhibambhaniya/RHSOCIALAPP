@@ -1,11 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { ScrollView, Image, Text, TouchableOpacity, StyleSheet, View, Alert, TextInput, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, ActivityIndicator, ScrollView, TextInput } from 'react-native';
 import { firebase } from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import storage from '@react-native-firebase/storage';
 import { launchImageLibrary, ImagePickerResponse } from 'react-native-image-picker';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from 'Navigation/YourStackfile';
 
-const HomeScreen: React.FC = () => {
+interface HomeScreenProps {
+  navigation: StackNavigationProp<RootStackParamList, 'Home'>;
+}
+
+const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [user, setUser] = useState<any>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [newPostText, setNewPostText] = useState<string>('');
@@ -19,43 +25,43 @@ const HomeScreen: React.FC = () => {
         const currentUser = firebase.auth().currentUser;
         if (currentUser) {
           setUser(currentUser);
+          await fetchPosts(); // No need to pass any arguments
+
         }
       } catch (error) {
         console.error('Error fetching user:', error);
         Alert.alert('Error', 'Failed to fetch user. Please try again.');
       }
     };
-
+  
     fetchUser();
   }, []);
+  
 
-  useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        const postsSnapshot = await firestore().collection('posts').get();
-        const fetchedPosts = postsSnapshot.docs.map(async (doc) => {
-          if (doc.exists) {
-            const postData = doc.data();
-            const userData = await firestore().collection('users').doc(postData.userId).get();
-            return {
-              id: doc.id,
-              ...postData,
-              userName: userData.data()?.name || 'Unknown',
-              profilePic: userData.data()?.profilePicture || null,
-            };
-          }
-          return null;
-        });
-        setPosts(await Promise.all(fetchedPosts.filter(post => post !== null)));
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching posts:', error);
-        Alert.alert('Error', 'Failed to fetch posts. Please try again.');
+ // Removed the userId parameter from fetchPosts as it's no longer needed
+const fetchPosts = async () => {
+  try {
+    const postsSnapshot = await firestore().collection('posts').get(); // Fetch all posts
+    const fetchedPosts = postsSnapshot.docs.map(async (doc) => {
+      if (doc.exists) {
+        const postData = doc.data();
+        const userData = await firestore().collection('users').doc(postData.userId).get();
+        return {
+          id: doc.id,
+          ...postData,
+          userName: userData.exists ? userData.data()?.name || 'Unknown' : 'Unknown',
+          profilePic: userData.exists ? userData.data()?.profilePicture || null : null,
+        };
       }
-    };
-
-    fetchPosts();
-  }, []);
+      return null;
+    });
+    setPosts(await Promise.all(fetchedPosts.filter(post => post !== null)));
+    setLoading(false);
+  } catch (error) {
+    console.error('Error fetching posts:', error);
+    Alert.alert('Error', 'Failed to fetch posts. Please try again.');
+  }
+};
 
   const handleChooseImage = () => {
     launchImageLibrary({ mediaType: 'photo' }, (response: ImagePickerResponse) => {
@@ -70,49 +76,57 @@ const HomeScreen: React.FC = () => {
 
   const handleCreatePost = async () => {
     try {
+      // Check if all fields are filled
+      if (!newPostText) {
+        Alert.alert('Error', 'Please write something for your post.');
+        return;
+      }
+  
+      // Upload image if available
       let imageUrl = '';
       if (newPostImage) {
         const imageRef = storage().ref(`images/${Date.now()}`);
         await imageRef.putFile(newPostImage);
         imageUrl = await imageRef.getDownloadURL();
       }
-
-      await firestore().collection('posts').add({
-        userId: user.uid,
-        userName: user.displayName,
-        profilePic: user.photoURL,
-        text: newPostText,
-        image: imageUrl,
-        createdAt: firestore.FieldValue.serverTimestamp(),
-      });
-
-      setNewPostText('');
-      setNewPostImage(null);
-      setShowNewPost(false);
-      setLoading(true);
-
-      const postsSnapshot = await firestore().collection('posts').get();
-      const updatedPosts = postsSnapshot.docs.map(async (doc) => {
-        if (doc.exists) {
-          const postData = doc.data();
-          const userData = await firestore().collection('users').doc(postData.userId).get();
-          return {
-            id: doc.id,
-            ...postData,
-            userName: userData.data()?.name || 'Unknown',
-            profilePic: userData.data()?.profilePicture || null,
-          };
-        }
-        return null;
-      });
-      setPosts(await Promise.all(updatedPosts.filter(post => post !== null)));
-      
-      setLoading(false);
+  
+      // Get current user
+      const currentUser = firebase.auth().currentUser;
+  
+      if (currentUser) {
+        // Create new post document in Firestore
+        await firestore().collection('posts').add({
+          userId: currentUser.uid, // Use currentUser.uid as userId
+          userName: currentUser.displayName, // Use currentUser.displayName if needed
+          text: newPostText,
+          image: imageUrl,
+          createdAt: firestore.FieldValue.serverTimestamp(),
+        });
+  
+        // Reset input fields and show loading indicator
+        setNewPostText('');
+        setNewPostImage(null);
+        setShowNewPost(false);
+        setLoading(true);
+  
+        // Fetch updated posts and update state
+        await fetchPosts();
+  
+        // Hide loading indicator
+        setLoading(false);
+      }
     } catch (error) {
       console.error('Error creating post:', error);
       Alert.alert('Error', 'Failed to create post. Please try again.');
     }
   };
+  
+
+  const handleProfilePress = (userId: string, profilePicture: string | null) => {
+    navigation.navigate('Profile', { userId, profilePicture: profilePicture || null });
+};
+
+
 
   return (
     <View style={styles.container}>
@@ -136,7 +150,7 @@ const HomeScreen: React.FC = () => {
               multiline
             />
             {newPostImage && (
-              <Image source={{ uri: newPostImage }} style={styles.newPostImage} />
+              <Image source={{ uri: newPostImage }} style={styles.postImage} />
             )}
             <TouchableOpacity style={styles.chooseImageButton} onPress={handleChooseImage}>
               <Text style={styles.chooseImageButtonText}>Choose Image</Text>
@@ -150,28 +164,33 @@ const HomeScreen: React.FC = () => {
         {loading ? (
           <ActivityIndicator size="large" color="#007bff" />
         ) : (
-          posts.map((post) => (
-            <View key={post.id} style={styles.card}>
-  <View style={styles.userInfo}>
+          posts.map((post: any) => (
+            <TouchableOpacity key={post.id} style={styles.card} > 
+              <View style={styles.userInfo}>
+              {post.profilePic && (
+  <TouchableOpacity onPress={() => handleProfilePress(post.userId, post.profilePic)}>
     <Image source={{ uri: post.profilePic }} style={styles.profilePic} />
-    <Text style={styles.userName}>{post.userName}</Text>
-  </View>
-  
-  {/* Post Text */}
-  {post.text && (
-    <View style={styles.postContent}>
-      <Text style={styles.postText}>{post.text}</Text>
-    </View>
-  )}
+  </TouchableOpacity>
+)}
+                {post.userName !== null ? (
+                  <Text style={styles.userName}>{post.userName}</Text>
+                ) : (
+                  <Text style={styles.userName}>Unknown User</Text>
+                )}
+              </View>
+              
+              {post.text && (
+                <View style={styles.postContent}>
+                  <Text style={styles.postText}>{post.text}</Text>
+                </View>
+              )}
 
-  {/* Post Image */}
-  {post.image && (
-    <View style={styles.postContent}>
-      <Image source={{ uri: post.image }} style={styles.postImage} />
-    </View>
-  )}
-</View>
-
+              {post.image && (
+                <View style={styles.postContent}>
+                  <Image source={{ uri: post.image }} style={styles.postImage} />
+                </View>
+              )}
+            </TouchableOpacity>
           ))
         )}
       </ScrollView>
@@ -199,7 +218,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 12,
   },
-  
   newPostButton: {
     width: 50,
     height: 50,
@@ -236,12 +254,6 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginBottom: 10,
     paddingHorizontal: 10,
-  },
-  newPostImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 5,
-    marginBottom: 10,
   },
   chooseImageButton: {
     backgroundColor: '#007bff',
@@ -281,22 +293,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
   },
-  profilePic: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 10,
-  },
   userName: {
     fontSize: 16,
     fontWeight: 'bold',
+    marginLeft: 5,
+  },
+  profilePic: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
   },
   postContent: {
     marginBottom: 10,
   },
   postText: {
     fontSize: 14,
-    marginLeft:5,
+    marginLeft: 5,
   },
   postImage: {
     width: '100%',
