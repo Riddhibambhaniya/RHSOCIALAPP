@@ -14,6 +14,7 @@ import EditProfileScreen from '../Screens/EditProfileScreen';
 import { firebase } from '@react-native-firebase/auth';
 import ProfileScreen from '../Screens/bottomtabscreen/ProfileScreen';
 import HomeScreen from '../Screens/bottomtabscreen/HomeScreen';
+import OtherUserProfileScreen from '../Screens/bottomtabscreen/OtherUserProfileScreen';
 
 export type RootStackParamList = {
   Onboarding: undefined;
@@ -27,6 +28,7 @@ export type RootStackParamList = {
   Chat: { user: any };
   EditProfile: undefined;
   Home: undefined;
+  OtherUserProfile:{ userId: string; profilePicture?: string | null };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -46,8 +48,10 @@ const YourStackfile: React.FC = () => {
       <Stack.Screen name="Chat" component={ChatScreen} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
-
       <Stack.Screen name="Home" component={HomeScreen} />
+      <Stack.Screen name="OtherUserProfile" component={OtherUserProfileScreen} />
+
+
     </Stack.Navigator>
   );
 };

@@ -6,12 +6,14 @@ import storage from '@react-native-firebase/storage';
 import { launchImageLibrary, ImagePickerResponse } from 'react-native-image-picker';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from 'Navigation/YourStackfile';
+import { RouteProp } from '@react-navigation/native';
 
 interface HomeScreenProps {
   navigation: StackNavigationProp<RootStackParamList, 'Home'>;
+  route: RouteProp<RootStackParamList, 'Home'>;
 }
 
-const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
+const HomeScreen: React.FC<HomeScreenProps> = ({ navigation, route }) => {
   const [user, setUser] = useState<any>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [newPostText, setNewPostText] = useState<string>('');
@@ -112,12 +114,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     }
   };
   
-  const handleProfilePress = (userId: string) => {
-    navigation.navigate('Profile', { userId });
-  };
-
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={true}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>RH SOCIAL</Text>
         {!showNewPost && (
@@ -127,7 +125,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         )}
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollViewContent} showsVerticalScrollIndicator={true}>
+      <View style={styles.postsContainer}>
         {showNewPost && (
           <View style={styles.newPostContainer}>
             <TextInput
@@ -153,10 +151,26 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           <ActivityIndicator size="large" color="#007bff" />
         ) : (
           posts.map((post: any) => (
-            <TouchableOpacity key={post.id} style={styles.card} onPress={() => handleProfilePress(post.userId)}> 
+            <TouchableOpacity
+              key={post.id}
+              style={styles.card}
+              onPress={() => {
+                if (post.userId !== firebase.auth().currentUser?.uid) { // Check if the post's user ID is not the same as the current user's ID
+                  navigation.navigate('OtherUserProfile', { userId: post.userId, profilePicture: post.profilePic || null });
+                }
+              }}
+            >
               <View style={styles.userInfo}>
                 {post.profilePic && (
-                  <Image source={{ uri: post.profilePic }} style={styles.profilePic} />
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (post.userId !== firebase.auth().currentUser?.uid) { // Check if the post's user ID is not the same as the current user's ID
+                        navigation.navigate('OtherUserProfile', { userId: post.userId, profilePicture: post.profilePic || null });
+                      }
+                    }}
+                  >
+                    <Image source={{ uri: post.profilePic }} style={styles.profilePic} />
+                  </TouchableOpacity>
                 )}
                 {post.userName !== null ? (
                   <Text style={styles.userName}>{post.userName}</Text>
@@ -179,14 +193,15 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             </TouchableOpacity>
           ))
         )}
-      </ScrollView>
-    </View>
+      </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
+    
   },
   header: {
     flexDirection: 'row',
@@ -216,10 +231,9 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 24,
   },
-  scrollViewContent: {
-    flexGrow: 1,
+  postsContainer: {
+    width: '100%',
     alignItems: 'center',
-    paddingBottom: 20,
   },
   newPostContainer: {
     width: '90%',
@@ -282,15 +296,16 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginLeft: 5,
+    marginLeft: 20,
   },
   profilePic: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginLeft:15,
   },
   postContent: {
-    marginBottom: 10,
+    marginBottom: 10,marginLeft:15,
   },
   postText: {
     fontSize: 14,
