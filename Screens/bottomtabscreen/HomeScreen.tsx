@@ -18,7 +18,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [newPostImage, setNewPostImage] = useState<string | null>(null);
   const [showNewPost, setShowNewPost] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
-  const [profilePicture, setProfilePicture] = useState<string | null>(null); // Moved the state declaration here
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -26,8 +25,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         const currentUser = firebase.auth().currentUser;
         if (currentUser) {
           setUser(currentUser);
-          await fetchPosts(); // No need to pass any arguments
-          setProfilePicture(currentUser?.photoURL || null); // Set the profile picture
+          await fetchPosts();
         }
       } catch (error) {
         console.error('Error fetching user:', error);
@@ -37,30 +35,30 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   
     fetchUser();
   }, []);
- // Removed the userId parameter from fetchPosts as it's no longer needed
-const fetchPosts = async () => {
-  try {
-    const postsSnapshot = await firestore().collection('posts').get(); // Fetch all posts
-    const fetchedPosts = postsSnapshot.docs.map(async (doc) => {
-      if (doc.exists) {
-        const postData = doc.data();
-        const userData = await firestore().collection('users').doc(postData.userId).get();
-        return {
-          id: doc.id,
-          ...postData,
-          userName: userData.exists ? userData.data()?.name || 'Unknown' : 'Unknown',
-          profilePic: userData.exists ? userData.data()?.profilePicture || null : null,
-        };
-      }
-      return null;
-    });
-    setPosts(await Promise.all(fetchedPosts.filter(post => post !== null)));
-    setLoading(false);
-  } catch (error) {
-    console.error('Error fetching posts:', error);
-    Alert.alert('Error', 'Failed to fetch posts. Please try again.');
-  }
-};
+
+  const fetchPosts = async () => {
+    try {
+      const postsSnapshot = await firestore().collection('posts').get();
+      const fetchedPosts = postsSnapshot.docs.map(async (doc) => {
+        if (doc.exists) {
+          const postData = doc.data();
+          const userData = await firestore().collection('users').doc(postData.userId).get();
+          return {
+            id: doc.id,
+            ...postData,
+            userName: userData.exists ? userData.data()?.name || 'Unknown' : 'Unknown',
+            profilePic: userData.exists ? userData.data()?.profilePicture || null : null,
+          };
+        }
+        return null;
+      });
+      setPosts(await Promise.all(fetchedPosts.filter(post => post !== null)));
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+      Alert.alert('Error', 'Failed to fetch posts. Please try again.');
+    }
+  };
 
   const handleChooseImage = () => {
     launchImageLibrary({ mediaType: 'photo' }, (response: ImagePickerResponse) => {
@@ -75,13 +73,11 @@ const fetchPosts = async () => {
 
   const handleCreatePost = async () => {
     try {
-      // Check if all fields are filled
       if (!newPostText) {
         Alert.alert('Error', 'Please write something for your post.');
         return;
       }
   
-      // Upload image if available
       let imageUrl = '';
       if (newPostImage) {
         const imageRef = storage().ref(`images/${Date.now()}`);
@@ -89,30 +85,25 @@ const fetchPosts = async () => {
         imageUrl = await imageRef.getDownloadURL();
       }
   
-      // Get current user
       const currentUser = firebase.auth().currentUser;
   
       if (currentUser) {
-        // Create new post document in Firestore
         await firestore().collection('posts').add({
           userId: currentUser.uid,
           userName: currentUser.displayName,
           text: newPostText,
           image: imageUrl,
-          profilePic: currentUser.photoURL || null, // Use the profile picture from current user
+          profilePic: currentUser.photoURL || null,
           createdAt: firestore.FieldValue.serverTimestamp(),
         });
   
-        // Reset input fields and show loading indicator
         setNewPostText('');
         setNewPostImage(null);
         setShowNewPost(false);
         setLoading(true);
   
-        // Fetch updated posts and update state
         await fetchPosts();
   
-        // Hide loading indicator
         setLoading(false);
       }
     } catch (error) {
@@ -124,12 +115,6 @@ const fetchPosts = async () => {
   const handleProfilePress = (userId: string) => {
     navigation.navigate('Profile', { userId });
   };
-  
-  
-
-
-
-
 
   return (
     <View style={styles.container}>
@@ -168,14 +153,11 @@ const fetchPosts = async () => {
           <ActivityIndicator size="large" color="#007bff" />
         ) : (
           posts.map((post: any) => (
-            <TouchableOpacity key={post.id} style={styles.card} > 
+            <TouchableOpacity key={post.id} style={styles.card} onPress={() => handleProfilePress(post.userId)}> 
               <View style={styles.userInfo}>
-              {post.profilePic && (
-  <TouchableOpacity onPress={() => handleProfilePress(post.userId)}>
-  <Image source={{ uri: post.profilePic }} style={styles.profilePic} />
-</TouchableOpacity>
-
-)}
+                {post.profilePic && (
+                  <Image source={{ uri: post.profilePic }} style={styles.profilePic} />
+                )}
                 {post.userName !== null ? (
                   <Text style={styles.userName}>{post.userName}</Text>
                 ) : (

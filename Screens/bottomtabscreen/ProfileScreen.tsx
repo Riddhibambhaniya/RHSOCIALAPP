@@ -20,6 +20,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   const [isCurrentUser, setIsCurrentUser] = useState<boolean>(false);
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [userPosts, setUserPosts] = useState<any[]>([]);
+  const [isFollowing, setIsFollowing] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -57,6 +58,19 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     fetchCurrentUser();
   }, [userId]);
 
+  useEffect(() => {
+    const checkIfFollowing = async () => {
+      const currentUser = firebase.auth().currentUser;
+      if (currentUser) {
+        const followingRef = firestore().collection('following').doc(currentUser.uid).collection('userFollowing').doc(userId);
+        const snapshot = await followingRef.get();
+        setIsFollowing(snapshot.exists);
+      }
+    };
+
+    checkIfFollowing();
+  }, [userId]);
+
   const fetchUserPosts = async (userId: string) => {
     try {
       const userPostsSnapshot = await firestore().collection('posts').where('userId', '==', userId).get();
@@ -78,13 +92,39 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     }
   };
 
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#2e64e5" />
-      </View>
-    );
-  }
+  const handleFollow = async () => {
+    try {
+      const currentUser = firebase.auth().currentUser;
+      if (currentUser) {
+        const followingRef = firestore().collection('following').doc(currentUser.uid).collection('userFollowing').doc(userId);
+        await followingRef.set({});
+        setIsFollowing(true);
+        // Optionally, you can update UI or show a message indicating successful follow
+      }
+    } catch (error) {
+      console.error('Error following user:', error);
+      Alert.alert('Error', 'Failed to follow user. Please try again.');
+    }
+  };
+
+  const handleUnfollow = async () => {
+    try {
+      const currentUser = firebase.auth().currentUser;
+      if (currentUser) {
+        const followingRef = firestore().collection('following').doc(currentUser.uid).collection('userFollowing').doc(userId);
+        await followingRef.delete();
+        setIsFollowing(false);
+        // Optionally, you can update UI or show a message indicating successful unfollow
+      }
+    } catch (error) {
+      console.error('Error unfollowing user:', error);
+      Alert.alert('Error', 'Failed to unfollow user. Please try again.');
+    }
+  };
+
+  const handleProfilePress = (userId: string) => {
+    navigation.push('Profile', { userId });
+  };
 
   return (
     <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
@@ -108,22 +148,33 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
             </TouchableOpacity>
           </View>
         ) : (
-          <TouchableOpacity style={[styles.button, { backgroundColor: '#2e64e5' }]}>
-            <Text style={styles.buttonText}>Follow</Text>
-          </TouchableOpacity>
+          <View style={styles.buttonsContainer}>
+            {isFollowing ? (
+              <TouchableOpacity style={[styles.button, { backgroundColor: '#28a745' }]} onPress={handleUnfollow}>
+                <Text style={styles.buttonText}>Following</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={[styles.button, { backgroundColor: '#2e64e5' }]} onPress={handleFollow}>
+                <Text style={styles.buttonText}>Follow</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={[styles.button, { backgroundColor: '#2e64e5' }]}>
+              <Text style={styles.buttonText}>Message</Text>
+            </TouchableOpacity>
+          </View>
         )}
         
         {/* User's Posts */}
         <View style={styles.postsContainer}>
-          <Text style={styles.postTitle}>Your Posts</Text>
+          <Text style={styles.postTitle}>User's Posts</Text>
           {userPosts.map((post) => (
             <View key={post.id} style={styles.postCard}>
                <View style={styles.userInfo}>
                {isCurrentUser && profilePicture && (
-  <View style={styles.userInfo}>
+                <View style={styles.userInfo}>
     <TouchableOpacity >
-      <Image source={{ uri: profilePicture }} style={styles.profilePic} />
-    </TouchableOpacity>
+                  <Image source={{ uri: profilePicture }} style={styles.profilePic} />
+              </TouchableOpacity>
     {post.userName !== null ? (
                   <Text style={styles.userName}>{post.userName}</Text>
                 ) : (
@@ -162,12 +213,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderColor: 'black',
     borderWidth: 1,
-    marginTop:50,
+    marginTop: 50,
   },
   buttonsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: '50%',
+    width: '80%',
+    marginVertical: 20,
   },
   button: {
     width: '45%',
@@ -194,6 +246,11 @@ const styles = StyleSheet.create({
     padding: 15,
     marginBottom: 15,
   },
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
   userName: {
     fontSize: 16,
     fontWeight: 'bold',
@@ -213,10 +270,6 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
     marginBottom: 10,
     borderRadius: 5,
-  },userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
   },
 });
 
