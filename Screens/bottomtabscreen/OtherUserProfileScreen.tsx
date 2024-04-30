@@ -15,6 +15,8 @@ const OtherUserProfileScreen: React.FC<OtherUserProfileScreenProps> = ({ navigat
   const [userName, setUserName] = useState<string>('');
   const [isFollowing, setIsFollowing] = useState<boolean>(false);
   const [userPosts, setUserPosts] = useState<any[]>([]);
+  console.log('SenderId:', firebase.auth().currentUser?.uid);
+  console.log('UserId:', userId);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -97,8 +99,11 @@ const OtherUserProfileScreen: React.FC<OtherUserProfileScreenProps> = ({ navigat
     }
   };
 
-  const handleMessage = () => {
-    // Implement message logic here
+  const handleMessage = () => {const { userId } = route.params; // Retrieve the userId from route.params
+  const selectedUserId = userId; // Set selectedUserId to userId (you may want to modify this logic based on your navigation)
+
+    // Navigate to the chat screen with the selected user
+    navigation.navigate('Chat', { userId, selectedUserId,userName });
   };
 
   return (

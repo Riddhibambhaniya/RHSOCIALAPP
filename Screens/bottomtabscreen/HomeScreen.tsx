@@ -147,52 +147,58 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation, route }) => {
           </View>
         )}
 
-        {loading ? (
-          <ActivityIndicator size="large" color="#007bff" />
-        ) : (
-          posts.map((post: any) => (
+{loading ? (
+  <ActivityIndicator size="large" color="#007bff" />
+) : (
+  posts.map((post: any) => {
+    console.log('User ID:', post.userId); // Log the userId
+
+    return (
+      <TouchableOpacity
+        key={post.id}
+        style={styles.card}
+        onPress={() => {
+          if (post.userId !== firebase.auth().currentUser?.uid) {
+            navigation.navigate('OtherUserProfile', { userId: post.userId, profilePicture: post.profilePic || null });
+          }
+        }}
+      >
+        <View style={styles.userInfo}>
+          {post.profilePic && (
             <TouchableOpacity
-              key={post.id}
-              style={styles.card}
               onPress={() => {
-                if (post.userId !== firebase.auth().currentUser?.uid) { // Check if the post's user ID is not the same as the current user's ID
+                if (post.userId !== firebase.auth().currentUser?.uid) {
                   navigation.navigate('OtherUserProfile', { userId: post.userId, profilePicture: post.profilePic || null });
                 }
               }}
             >
-              <View style={styles.userInfo}>
-                {post.profilePic && (
-                  <TouchableOpacity
-                    onPress={() => {
-                      if (post.userId !== firebase.auth().currentUser?.uid) { // Check if the post's user ID is not the same as the current user's ID
-                        navigation.navigate('OtherUserProfile', { userId: post.userId, profilePicture: post.profilePic || null });
-                      }
-                    }}
-                  >
-                    <Image source={{ uri: post.profilePic }} style={styles.profilePic} />
-                  </TouchableOpacity>
-                )}
-                {post.userName !== null ? (
-                  <Text style={styles.userName}>{post.userName}</Text>
-                ) : (
-                  <Text style={styles.userName}>Unknown User</Text>
-                )}
-              </View>
-              
-              {post.text && (
-                <View style={styles.postContent}>
-                  <Text style={styles.postText}>{post.text}</Text>
-                </View>
-              )}
-
-              {post.image && (
-                <View style={styles.postContent}>
-                  <Image source={{ uri: post.image }} style={styles.postImage} />
-                </View>
-              )}
+              <Image source={{ uri: post.profilePic }} style={styles.profilePic} />
             </TouchableOpacity>
-          ))
+          )}
+          {post.userName !== null ? (
+            <Text style={styles.userName}>{post.userName}</Text>
+          ) : (
+            <Text style={styles.userName}>Unknown User</Text>
+          )}
+        </View>
+        
+        {post.text && (
+          <View style={styles.postContent}>
+            <Text style={styles.postText}>{post.text}</Text>
+          </View>
         )}
+
+        {post.image && (
+          <View style={styles.postContent}>
+            <Image source={{ uri: post.image }} style={styles.postImage} />
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  })
+)}
+
+         
       </View>
     </ScrollView>
   );
@@ -201,7 +207,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    
   },
   header: {
     flexDirection: 'row',
@@ -302,10 +307,11 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    marginLeft:15,
+    marginLeft: 15,
   },
   postContent: {
-    marginBottom: 10,marginLeft:15,
+    marginBottom: 10,
+    marginLeft: 15,
   },
   postText: {
     fontSize: 14,

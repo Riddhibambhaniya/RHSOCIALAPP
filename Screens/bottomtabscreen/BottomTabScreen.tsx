@@ -20,8 +20,20 @@ const BottomTabScreen = () => {
         tabBarLabel: getTabBarLabel(route),
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
-      <Tab.Screen name="Messages" component={MessagesScreen} options={{ headerShown: false }} />
+      
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen as React.ComponentType<any>} // Add explicit type annotation
+        options={{ headerShown: false }} initialParams={{ userId: 'currentUserId' }}
+      />
+      <Tab.Screen
+  name="Messages"
+  component={MessagesScreen as React.ComponentType<any>}
+  options={{ headerShown: false }}
+  initialParams={{ userId: 'currentUserId', selectedUserId: 'selectedUserId', userName: 'currentUserName' }}
+/>
+
+    
       <Tab.Screen
         name="Profile"
         component={ProfileScreen as React.ComponentType<any>} // Add explicit type annotation
