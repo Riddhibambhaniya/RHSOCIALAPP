@@ -1,53 +1,45 @@
-// ResetPasswordScreen.tsx
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../Navigation/YourStackfile';
 import auth from '@react-native-firebase/auth';
+import { RouteProp } from '@react-navigation/native';
 
 interface ResetPasswordScreenProps {
   navigation: StackNavigationProp<RootStackParamList, 'ResetPassword'>;
+  route: RouteProp<RootStackParamList, 'ResetPassword'>; 
 }
 
-const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({ navigation }) => {
-  const [email, setEmail] = useState('');
+const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({ navigation, route }) => {
+  const { email } = route.params;
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
 
-  const handleResetPassword = () => {
+  const handleResetPassword = async () => {
+    if (!newPassword || !confirmNewPassword) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
     if (newPassword !== confirmNewPassword) {
       Alert.alert('Error', 'Passwords do not match');
       return;
     }
 
-    const user = auth().currentUser;
-    if (user) {
-      user
-        .updatePassword(newPassword)
-        .then(() => {
-          Alert.alert('Success', 'Password reset successfully');
-          navigation.navigate('Login');
-        })
-        .catch((error: any) => {
-          Alert.alert('Error', error.message);
-        });
-    } else {
-      Alert.alert('Error', 'User not found.');
+    try {
+      await auth().confirmPasswordReset(email, newPassword);
+      Alert.alert('Success', 'Password updated successfully');
+      setNewPassword('');
+      setConfirmNewPassword('');
+    } catch (error) {
+      console.error('Reset password error:', error);
+      Alert.alert('Error', 'Failed to update password. Please try again.');
     }
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Reset Password</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Enter your email"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-        autoCorrect={false}
-      />
       <TextInput
         style={styles.input}
         placeholder="New Password"

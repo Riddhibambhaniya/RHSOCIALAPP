@@ -1,4 +1,3 @@
-// ForgotPasswordScreen.tsx
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -12,19 +11,28 @@ interface ForgotPasswordScreenProps {
 const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navigation }) => {
   const [email, setEmail] = useState('');
 
-  const handleResetPassword = () => {
+  const handleResetPassword = async () => {
     if (email.trim() === '') {
       Alert.alert('Error', 'Please enter your email.');
-    } else {
-      auth()
-        .sendPasswordResetEmail(email)
-        .then(() => {
-          Alert.alert('Password Reset', `Password reset link sent to ${email}`);
-          navigation.navigate('ResetPassword');
-        })
-        .catch((error: any) => {
-          Alert.alert('Error', error.message);
-        });
+      return;
+    }
+
+    try {
+      await auth().sendPasswordResetEmail(email);
+      Alert.alert('Password Reset', `Password reset link sent to ${email}`, [
+        { text: 'OK', onPress: () => navigation.navigate('Login') }
+      ]);
+    } catch (error: any) {
+      console.error('Password reset error:', error);
+
+      let errorMessage = 'Failed to send password reset email. Please try again.';
+      if (error.code === 'auth/user-not-found') {
+        errorMessage = 'User not found. Please check the entered email address.';
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = 'Invalid email address format. Please enter a valid email address.';
+      }
+
+      Alert.alert('Error', errorMessage);
     }
   };
 

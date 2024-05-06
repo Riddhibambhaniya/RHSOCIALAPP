@@ -64,7 +64,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     auth()
       .signInWithEmailAndPassword(email, password)
       .then(() => {
-        navigation.navigate('BottomTabScreen');
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'BottomTabScreen' }], // Replace with your HomeScreen route name
+        });
+      
       })
       .catch((error) => {
         Alert.alert('Error', error.message);

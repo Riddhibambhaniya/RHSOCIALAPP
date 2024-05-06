@@ -27,10 +27,11 @@ const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
       if (user) {
         // Save user data to Firestore with user ID
         await firestore().collection('users').doc(user.uid).set({
-          userId: user.uid, // Save user ID
+          userId: user.uid,
           name: name,
           email: email,
           phoneNumber: phoneNumber,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(), // Include timestamp field
         });
   
         // Navigate to the bottom tab screen

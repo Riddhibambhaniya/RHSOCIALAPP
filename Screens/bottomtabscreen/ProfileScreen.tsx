@@ -4,7 +4,6 @@ import { firebase } from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from 'Navigation/YourStackfile';
-import { RouteProp } from '@react-navigation/native';
 
 type ProfileScreenProps = {
   navigation: StackNavigationProp<RootStackParamList, 'Profile'>;
@@ -26,6 +25,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   const [isCurrentUser, setIsCurrentUser] = useState<boolean>(false);
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [followingCount, setFollowingCount] = useState<number>(0);
 
   useEffect(() => {
     const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
@@ -33,6 +33,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
         fetchUserData(user.uid);
         fetchUserPosts(user.uid);
         setIsCurrentUser(true);
+        fetchFollowingCount(user.uid);
       } else {
         setIsCurrentUser(false);
         setDisplayName('');
@@ -57,7 +58,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
 
   const fetchUserPosts = async (uid: string) => {
     try {
-      const postsSnapshot = await firestore().collection('posts').where('userId', '==', uid).get(); // Filter posts by userId
+      const postsSnapshot = await firestore().collection('posts').where('userId', '==', uid).get();
       const fetchedPosts = postsSnapshot.docs.map(async (doc) => {
         if (doc.exists) {
           const postData = doc.data();
@@ -79,17 +80,21 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
       Alert.alert('Error', 'Failed to fetch posts. Please try again.');
     }
   };
-  
-  
-  
-  useEffect(() => {
-    console.log(posts); // Log the posts array after it has been set
-  }, [posts]);
+
+  const fetchFollowingCount = async (uid: string) => {
+    try {
+      const followingRef = await firestore().collection('following').doc(uid).collection('userFollowing').get();
+      setFollowingCount(followingRef.size);
+    } catch (error) {
+      console.error('Error fetching following count:', error);
+      Alert.alert('Error', 'Failed to fetch following count.');
+    }
+  };
 
   const handleProfilePress = (userId: string, profilePicture: string | null) => {
     navigation.navigate('Profile', { userId, profilePicture: profilePicture || null });
   };
-  
+
   const handleLogout = () => {
     Alert.alert(
       'Logout',
@@ -128,15 +133,17 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   return (
     <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
       <View style={styles.container}>
-      {profilePicture !== null ? (
-  <Image style={styles.profilePicture} source={{ uri: profilePicture }} />
-) : (
-  <Image style={styles.profilePicture} source={require('../../Assets/Images/profile.jpg')} />
-)}
+        {profilePicture !== null ? (
+          <View style={styles.profilePictureContainer}>
+            <Image style={styles.profilePicture} source={{ uri: profilePicture }} />
+          </View>
+        ) : (
+          <Image style={styles.profilePicture} source={require('../../Assets/Images/profile.jpg')} />
+        )}
 
         <Text style={styles.title}>{displayName}</Text>
+
         
-        {isCurrentUser ? (
           <View style={styles.buttonsContainer}>
             <TouchableOpacity
               style={[styles.button, { backgroundColor: '#2e64e5' }]}
@@ -147,15 +154,20 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
               <Text style={styles.buttonText}>Logout</Text>
             </TouchableOpacity>
           </View>
-        ) : (
-          <TouchableOpacity style={[styles.button, { backgroundColor: '#2e64e5' }]}>
-            <Text style={styles.buttonText}>Follow</Text>
-          </TouchableOpacity>
-        )}
+        
+          <View style={styles.statsContainer}>
+  <View style={styles.statItem}>
+    <Text style={styles.statCount}>{posts.length}</Text>
+    <Text style={styles.statText}>Posts</Text>
+   
+  </View>
+  <View style={styles.statItem}>
+    <Text style={styles.statCount}>{followingCount}</Text>
+    <Text style={styles.statText}>Following</Text>
+    
+  </View>
+</View>
 
-        <View style={styles.statsContainer}>
-          <Text style={styles.statText}>Posts: {posts.length}</Text>
-        </View>
 
         <ScrollView style={styles.postsContainer}>
           {posts.map((post) => (
@@ -166,12 +178,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                 </TouchableOpacity>
                 <Text style={styles.postUserName}>{post.userName}</Text>
               </View>
-              {post.image && (
-                <Image source={{ uri: post.image }} style={styles.postImage} />
-              )}
-             {post.text && (
-              <Text style={styles.postContent}>{post.text && post.text.trim()}</Text>
-             )}
+              {post.text && <Text style={styles.postContent}>{post.text && post.text.trim()}</Text>}
+              {post.image && <Image source={{ uri: post.image }} style={styles.postImage} />}
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -190,26 +198,39 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
+   
+  },
+  profilePictureContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+    marginTop: 50,
   },
   profilePicture: {
-    width: 144,
-    height: 160,
-    borderRadius: 50,
-    marginBottom: 20,
+    width: 130,
+    height: 130,
+    borderRadius: 65,
     borderColor: 'black',
     borderWidth: 1,
-    marginTop:50,
+    resizeMode: 'cover',
   },
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     width: '80%',
     marginBottom: 20,
-    marginTop:70,
+  },
+  statItem: {
+    alignItems: 'center',marginTop:20
   },
   statText: {
     fontSize: 18,
     fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  statCount: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2e64e5', // Custom color for count
   },
   buttonsContainer: {
     flexDirection: 'row',
@@ -242,33 +263,27 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   postProfilePic: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginLeft: 15,
   },
   postUserName: {
-    marginLeft: 10,
+    marginLeft: 20,
     fontWeight: 'bold',
     fontSize: 16,
-  },
-  postTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
   },
   postContent: {
     fontSize: 16,
+    marginLeft: 20,
+    marginBottom: 10,
   },
- // Update the style of postImage
-postImage: {
-  width: '100%', // Make the width cover the entire card
-  aspectRatio: 16 / 9, // Set the aspect ratio to maintain the image's original proportions
-
-height: 200,
-    resizeMode: 'contain',  marginBottom: 10,
-  borderRadius: 5,
-},
-
+  postImage: {
+    width: '100%',
+    height: 350,
+    resizeMode: 'contain',
+    borderRadius: 5,
+  },
 });
 
 export default ProfileScreen;

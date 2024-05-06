@@ -14,6 +14,7 @@ import OtherUserProfileScreen from '../Screens/bottomtabscreen/OtherUserProfileS
 import MessagesScreen from '../Screens/bottomtabscreen/MessagePage';
 
 import { firebase } from '@react-native-firebase/auth';
+import PostCommentsScreen from '../Screens/PostCommentsScreen';
 
 export type RootStackParamList = {
   Onboarding: undefined;
@@ -22,12 +23,13 @@ export type RootStackParamList = {
   ForgotPassword: undefined;
   BottomTabScreen: undefined;
   Profile: { userId: string; profilePicture?: string | null };
-  ResetPassword: undefined;
+  ResetPassword: { email: string }; // Define params for ResetPassword screen
   Messages: { userId: string; selectedUserId: string; userName: string };
   Chat: { userId: string; selectedUserId: string; userName: string };
   EditProfile: undefined;
   Home: undefined;
   OtherUserProfile: { userId: string; profilePicture?: string | null };
+  PostComments: { postId: string };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -44,16 +46,12 @@ const YourStackfile: React.FC = () => {
       <Stack.Screen name="BottomTabScreen" component={BottomTabScreen} />
       <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
       <Stack.Screen name="Messages" component={MessagesScreen} />
-      <Stack.Screen
-  name="Chat"
-  component={ChatScreen}
-  initialParams={{ userId: '', selectedUserId: '', userName: '' }}
-/>
-
+      <Stack.Screen name="Chat" component={ChatScreen} initialParams={{ userId: '', selectedUserId: '', userName: '' }} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="Home" component={HomeScreen} />
       <Stack.Screen name="OtherUserProfile" component={OtherUserProfileScreen} />
+      <Stack.Screen name="PostComments" component={PostCommentsScreen} />
     </Stack.Navigator>
   );
 };

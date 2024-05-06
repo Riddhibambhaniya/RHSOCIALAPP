@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert, Image } from 'react-native';
 import { firebase } from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
-import storage from '@react-native-firebase/storage'; // Import Firebase storage
-import { launchImageLibrary, ImagePickerResponse } from 'react-native-image-picker'; // Import image picker
+import storage from '@react-native-firebase/storage';
+import { launchImageLibrary, ImagePickerResponse } from 'react-native-image-picker';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from 'Navigation/YourStackfile';
 
@@ -15,8 +15,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
   const [displayName, setDisplayName] = useState<string>('');
   const [email, setEmail] = useState<string>('');
   const [phoneNumber, setPhoneNumber] = useState<string>('');
-  const [profilePicture, setProfilePicture] = useState<string | null>(null);
-  const [avatarSource, setAvatarSource] = useState<string | null>(null); // Added state to track avatar source
+  const [avatarSource, setAvatarSource] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUserData();
@@ -30,8 +29,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
         setDisplayName(userData.data()?.name || '');
         setEmail(userData.data()?.email || '');
         setPhoneNumber(userData.data()?.phoneNumber || '');
-        setProfilePicture(userData.data()?.profilePicture || null); // Set profile picture
-        setAvatarSource(userData.data()?.profilePicture || null); // Set avatar source
+        setAvatarSource(userData.data()?.profilePicture || null);
       } else {
         console.error('No user currently signed in.');
       }
@@ -69,7 +67,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
   const handleChooseProfilePicture = () => {
     launchImageLibrary({ mediaType: 'photo' }, (response: ImagePickerResponse) => {
       if (!response.didCancel && response.assets && response.assets.length > 0) {
-        const uri = response.assets[0]?.uri; // Use optional chaining
+        const uri = response.assets[0]?.uri;
         if (uri) {
           uploadProfilePicture(uri);
         } else {
@@ -92,8 +90,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
           profilePicture: url,
         });
 
-        setProfilePicture(url);
-        setAvatarSource(url); // Set avatar source to the uploaded picture
+        setAvatarSource(url);
       } else {
         console.error('No user currently signed in.');
       }
@@ -170,7 +167,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 18,
     marginBottom: 5,
-    marginTop:15,
+    marginTop: 15,
   },
   input: {
     borderWidth: 1,
@@ -192,13 +189,16 @@ const styles = StyleSheet.create({
   },
   profilePictureContainer: {
     alignItems: 'center',
-    marginBottom: 20,marginTop:50,
+    marginBottom: 20,
+    marginTop: 50,
   },
   profilePicture: {
-    width: 144,
-    height: 160,
-    borderRadius: 50, borderColor: 'black',
-    borderWidth: 1, // Add border width for clarity
+    width: 130,
+    height: 130,
+    borderRadius: 60, // Make it a circle by setting borderRadius to half of width and height
+    borderColor: 'black',
+    borderWidth: 1,
+    resizeMode: 'cover', // Maintain aspect ratio and cover the container
   },
 });
 

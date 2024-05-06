@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, FlatList } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from 'Navigation/YourStackfile';
 import { firebase } from '@react-native-firebase/auth';
@@ -10,13 +10,17 @@ interface OtherUserProfileScreenProps {
   route: any; // Ensure to import appropriate type for route
 }
 
+interface PostItem {
+  id: string;
+  image: string;
+  text: string;
+}
+
 const OtherUserProfileScreen: React.FC<OtherUserProfileScreenProps> = ({ navigation, route }) => {
   const { userId, profilePicture } = route.params;
   const [userName, setUserName] = useState<string>('');
   const [isFollowing, setIsFollowing] = useState<boolean>(false);
-  const [userPosts, setUserPosts] = useState<any[]>([]);
-  console.log('SenderId:', firebase.auth().currentUser?.uid);
-  console.log('UserId:', userId);
+  const [userPosts, setUserPosts] = useState<PostItem[]>([]);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -46,26 +50,30 @@ const OtherUserProfileScreen: React.FC<OtherUserProfileScreenProps> = ({ navigat
       }
     };
 
+    const fetchUserPosts = async () => {
+      try {
+        const currentUser = firebase.auth().currentUser;
+        if (currentUser && isFollowing) {
+          const userPostsSnapshot = await firestore()
+            .collection('posts')
+            .where('userId', '==', userId)
+            .get();
+          const fetchedUserPosts: PostItem[] = userPostsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            image: doc.data().image || '',
+            text: doc.data().text || '',
+          }));
+          setUserPosts(fetchedUserPosts);
+        }
+      } catch (error) {
+        console.error('Error fetching user posts:', error);
+        Alert.alert('Error', 'Failed to fetch user posts.');
+      }
+    };
+
     fetchUserData();
     fetchUserPosts();
-  }, [userId]);
-
-  const fetchUserPosts = async () => {
-    try {
-      const userPostsSnapshot = await firestore()
-        .collection('posts')
-        .where('userId', '==', userId)
-        .get();
-      const fetchedUserPosts = userPostsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setUserPosts(fetchedUserPosts);
-    } catch (error) {
-      console.error('Error fetching user posts:', error);
-      Alert.alert('Error', 'Failed to fetch user posts.');
-    }
-  };
+  }, [userId, isFollowing]);
 
   const handleFollow = async () => {
     try {
@@ -83,6 +91,7 @@ const OtherUserProfileScreen: React.FC<OtherUserProfileScreenProps> = ({ navigat
           .doc(userId)
           .delete();
         setIsFollowing(false);
+        setUserPosts([]); // Clear user posts when unfollowing
       } else {
         // Follow the user
         await firestore()
@@ -99,113 +108,104 @@ const OtherUserProfileScreen: React.FC<OtherUserProfileScreenProps> = ({ navigat
     }
   };
 
-  const handleMessage = () => {const { userId } = route.params; // Retrieve the userId from route.params
-  const selectedUserId = userId; // Set selectedUserId to userId (you may want to modify this logic based on your navigation)
-
-    // Navigate to the chat screen with the selected user
-    navigation.navigate('Chat', { userId, selectedUserId,userName });
+  const handleMessage = () => {
+    const currentUser = firebase.auth().currentUser;
+    if (currentUser) {
+      const selectedUserId = userId;
+      navigation.navigate('Chat', { userId, selectedUserId, userName });
+    } else {
+      // Handle user not logged in
+      Alert.alert('Error', 'You must be logged in to send a message.');
+    }
   };
 
+  const renderPostItem = ({ item }: { item: PostItem }) => (
+    <View style={styles.postCard}>
+      <View style={styles.postHeader}>
+        {profilePicture ? (
+          <Image source={{ uri: profilePicture }} style={styles.postProfilePic} />
+        ) : (
+          <Image source={require('../../Assets/Images/profile.jpg')} style={styles.postProfilePic} />
+        )}
+        <Text style={styles.postUserName}>{userName}</Text>
+      </View>
+      <Text style={styles.postText}>{item.text}</Text>
+      {item.image && <Image source={{ uri: item.image }} style={styles.postImage} />}
+    </View>
+  );
+
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.profileContainer}>
-        <View style={styles.profileInfo}>
+    <FlatList
+      data={userPosts}
+      renderItem={renderPostItem}
+      keyExtractor={item => item.id}
+      ListHeaderComponent={() => (
+        <View style={styles.profileContainer}>
           {profilePicture ? (
             <Image source={{ uri: profilePicture }} style={styles.profilePicture} />
           ) : (
-            <Image
-              source={require('../../Assets/Images/profile.jpg')}
-              style={styles.profilePicture}
-            />
+            <Image source={require('../../Assets/Images/profile.jpg')} style={styles.profilePicture} />
           )}
           <Text style={styles.userName}>{userName}</Text>
-        </View>
-        <View style={styles.buttonsContainer}>
-          <TouchableOpacity style={[styles.button, { backgroundColor: '#2e64e5' }]} onPress={handleFollow}>
-            <Text style={styles.buttonText}>{isFollowing ? 'Following' : 'Follow'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.button, { backgroundColor: '#2e64e5' }]} onPress={handleMessage}>
-            <Text style={styles.buttonText}>Message</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <Text style={styles.sectionTitle}>Posts</Text>
-
-      <ScrollView style={styles.postsContainer}>
-        {userPosts.map(post => (
-          <View key={post.id} style={styles.postCard}>
-            <View style={styles.postHeader}>
-              {profilePicture ? (
-                <Image source={{ uri: profilePicture }} style={styles.postProfilePic} />
-              ) : (
-                <Image
-                  source={require('../../Assets/Images/profile.jpg')}
-                  style={styles.postProfilePic}
-                />
-              )}
-              <Text style={styles.postUserName}>{userName}</Text>
-            </View>
-            {post.image && <Image source={{ uri: post.image }} style={styles.postImage} />}
-            <Text style={styles.postText}>{post.text}</Text>
+          <View style={styles.buttonsContainer}>
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: isFollowing ? '#ccc' : '#2e64e5' }]}
+              onPress={handleFollow}
+              disabled={isFollowing}
+            >
+              <Text style={styles.buttonText}>{isFollowing ? 'Following' : 'Follow'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.button, { backgroundColor: '#2e64e5' }]} onPress={handleMessage}>
+              <Text style={styles.buttonText}>Message</Text>
+            </TouchableOpacity>
           </View>
-        ))}
-      </ScrollView>
-    </ScrollView>
+        </View>
+      )}
+      contentContainerStyle={styles.postsContainer}
+    />
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
     backgroundColor: '#fff',
   },
   profileContainer: {
     alignItems: 'center',
-    
-  },
-  profileInfo: {
-    alignItems: 'center',
+    marginTop: 40,
+    marginBottom: 20,
   },
   profilePicture: {
-    width: 144,
-    height: 160,
-    borderRadius: 50,
-    marginBottom: 20,
+    width: 130,
+    height: 130,
+    borderRadius: 60, // Make it a circle by setting borderRadius to half of width and height
     borderColor: 'black',
     borderWidth: 1,
-    marginTop: 50,
+    resizeMode: 'cover', // Maintain aspect ratio and cover the container
   },
   userName: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginTop: 10,
+    marginBottom: 10,
   },
   buttonsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: '55%',
+    width: '55%',marginTop:10,
   },
   button: {
     borderRadius: 5,
     paddingVertical: 10,
     paddingHorizontal: 20,
     alignItems: 'center',
-    marginTop:20,
   },
   buttonText: {
     color: '#fff',
     fontSize: 16,
   },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,marginTop:30,marginRight:280,
-  },
   postsContainer: {
-    width: '100%',
-    paddingHorizontal: 20,marginTop:10,
+    paddingHorizontal: 20,
   },
   postCard: {
     marginBottom: 20,
@@ -224,23 +224,23 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   postProfilePic: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    marginRight: 10,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginLeft: 15,
   },
   postUserName: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: 'bold',marginLeft:20,
   },
   postImage: {
     width: '100%',
-    height: 200,
-    marginBottom: 10,
+    height: 350,
+    resizeMode: 'contain',
     borderRadius: 5,
   },
   postText: {
-    fontSize: 16,
+    fontSize: 16,marginBottom:10,marginLeft:20
   },
 });
 
